@@ -1,0 +1,86 @@
+name: wellbeing-feed-rl
+description: >
+  RL environment simulating social media content recommendation that
+  balances user engagement with mental wellbeing. Agent detects negative
+  spirals and intervenes with positive content.
+version: "1.0.0"
+tags: [openenv, rl, wellbeing, social-media, content-moderation]
+
+env_class: wellbeing_env.WellbeingFeedEnv
+inference_script: inference.py
+
+observation_space:
+  type: dict
+  fields:
+    user_mood:
+      { type: float, range: [-1.0, 1.0], description: "Emotional state" }
+    mood_trend:
+      { type: float, range: [-1.0, 1.0], description: "Mood rate of change" }
+    engagement_level:
+      { type: float, range: [0.0, 1.0], description: "User engagement" }
+    content_history:
+      {
+        type: array,
+        items: { type: float },
+        length: 10,
+        description: "Last 10 sentiments",
+      }
+    session_duration:
+      { type: float, range: [0.0, 1.0], description: "Session progress" }
+    vulnerability_score:
+      { type: float, range: [0.0, 1.0], description: "Spiral susceptibility" }
+    scroll_velocity:
+      { type: float, range: [0.0, 1.0], description: "Scroll speed" }
+    time_of_day: { type: float, range: [0.0, 1.0], description: "Time of day" }
+
+action_space:
+  type: discrete
+  n: 5
+  actions:
+    0: show_trending
+    1: show_motivational
+    2: show_educational
+    3: show_funny
+    4: show_personalized
+
+reward:
+  type: float
+  range: [0.0, 1.0]
+  description: >
+    30% mood health + 25% engagement + 15% mood improvement +
+    10% anti-doomscroll + spiral rescue bonus - toxicity penalty.
+    Component breakdown available in reward.components.
+
+tasks:
+  - id: easy_stable_user
+    difficulty: easy
+    max_steps: 50
+    success_threshold: 0.6
+    description: Stable user, mild negativity. Maintain mood + engagement.
+
+  - id: medium_spiral_detection
+    difficulty: medium
+    max_steps: 100
+    success_threshold: 0.5
+    description: Clustered toxic content. Detect and break downward spirals.
+
+  - id: hard_engagement_trap
+    difficulty: hard
+    max_steps: 150
+    success_threshold: 0.4
+    description: Doomscrolling user, late night. Break addiction without losing them.
+
+environment_variables:
+  - name: API_BASE_URL
+    description: The API endpoint for the LLM
+    required: true
+  - name: MODEL_NAME
+    description: The model identifier to use for inference
+    required: true
+  - name: HF_TOKEN
+    description: Your Hugging Face / API key
+    required: true
+
+docker:
+  base_image: python:3.11-slim
+  port: 7860
